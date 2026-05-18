@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>X-Ray</title>
+  <meta name="description" content="X-Ray - X 重要信息还原器" />
+  <style>
+    :root {
+      --bg: #eef1f4;
+      --panel: #ffffff;
+      --soft: #f7f9fb;
+      --line: #d8e0e8;
+      --text: #101828;
+      --muted: #667085;
+      --green: #067647;
+      --blue: #175cd3;
+      --amber: #b54708;
+      --red: #b42318;
+      --violet: #6941c6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", Arial, "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+    button, input, select { font: inherit; }
+    .app { min-height: 100vh; display: grid; grid-template-rows: 64px 1fr; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 0 18px; background: rgba(255,255,255,.96); border-bottom: 1px solid var(--line);
+      position: sticky; top: 0; z-index: 5; backdrop-filter: blur(12px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 220px; }
+    .logo { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; background: #111827; color: white; font-weight: 800; }
+    .brand h1 { margin: 0; font-size: 18px; }
+    .brand p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+    .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .search, .select, .btn {
+      height: 36px; border: 1px solid var(--line); border-radius: 8px; background: white; color: #344054;
+    }
+    .search { width: 280px; padding: 0 12px; outline: none; }
+    .select { padding: 0 10px; }
+    .btn { padding: 0 12px; cursor: pointer; }
+    .btn.primary { background: #111827; color: white; border-color: #111827; }
+    .layout { display: grid; grid-template-columns: 360px minmax(520px, 1fr) 340px; min-height: 0; }
+    .rail, .side { background: var(--panel); min-height: 0; overflow: auto; }
+    .rail { border-right: 1px solid var(--line); }
+    .side { border-left: 1px solid var(--line); }
+    .rail-head, .side-head {
+      height: 56px; display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid var(--line);
+    }
+    .rail-head strong, .side-head strong { font-size: 14px; }
+    .subtle { color: var(--muted); font-size: 12px; }
+    .topic-list { padding: 10px; }
+    .topic {
+      width: 100%; text-align: left; background: white; border: 1px solid var(--line);
+      border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: pointer;
+    }
+    .topic:hover, .topic.active { border-color: #111827; box-shadow: 0 8px 20px rgba(16,24,40,.08); }
+    .topic-title { font-size: 14px; line-height: 1.45; font-weight: 700; margin: 10px 0 9px; }
+    .topic-foot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .mini { background: var(--soft); border: 1px solid #edf1f5; border-radius: 7px; padding: 7px; }
+    .mini span { display: block; font-size: 11px; color: var(--muted); }
+    .mini b { font-size: 14px; }
+    .pill {
+      display: inline-flex; align-items: center; height: 24px; border: 1px solid var(--line);
+      border-radius: 999px; padding: 0 8px; font-size: 12px; background: white; color: #344054; margin-right: 6px;
+    }
+    .confirmed { color: var(--green); background: #ecfdf3; border-color: #abefc6; }
+    .developing { color: var(--blue); background: #eff8ff; border-color: #b2ddff; }
+    .unverified { color: var(--amber); background: #fffaeb; border-color: #fedf89; }
+    .high_risk { color: var(--red); background: #fef3f2; border-color: #fecdca; }
+    .role-source { color: var(--violet); background: #f4f3ff; border-color: #d9d6fe; }
+    .role-evidence { color: var(--green); background: #ecfdf3; border-color: #abefc6; }
+    .role-amplifier { color: var(--blue); background: #eff8ff; border-color: #b2ddff; }
+    .role-opinion { color: #344054; background: #f2f4f7; border-color: #d0d5dd; }
+    .role-counter { color: var(--amber); background: #fffaeb; border-color: #fedf89; }
+    .role-duplicate { color: #475467; background: #f2f4f7; border-color: #d0d5dd; }
+    .role-spam { color: var(--red); background: #fef3f2; border-color: #fecdca; }
+    main { min-height: 0; overflow: auto; padding: 18px; }
+    .hero, .chain, .section { background: white; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 14px; padding: 16px; }
+    .hero { padding: 18px; }
+    .hero-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .hero h2 { font-size: 22px; line-height: 1.32; margin: 10px 0; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+    .metric { border: 1px solid var(--line); background: var(--soft); border-radius: 8px; padding: 12px; }
+    .metric span { display: block; font-size: 12px; color: var(--muted); }
+    .metric b { display: block; font-size: 22px; margin-top: 4px; }
+    .chain h3, .section h3 { margin: 0 0 12px; font-size: 15px; }
+    .chain-flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .chain-step { min-height: 84px; border: 1px solid var(--line); border-radius: 8px; background: var(--soft); padding: 10px; }
+    .chain-step p { font-size: 12px; color: var(--muted); line-height: 1.45; margin: 6px 0 0; }
+    .post { border: 1px solid #e8edf3; border-radius: 8px; background: #fbfcfe; padding: 13px; margin-top: 10px; }
+    .post-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+    .author { font-size: 14px; font-weight: 700; }
+    .meta { font-size: 12px; color: var(--muted); line-height: 1.45; }
+    .post-text { font-family: inherit; font-size: 14px; line-height: 1.68; white-space: pre-wrap; margin: 8px 0; }
+    .post-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    a { color: #175cd3; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .role-bars { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .bar { display: grid; grid-template-columns: 84px 1fr 26px; gap: 8px; align-items: center; margin: 9px 0; font-size: 12px; color: #344054; }
+    .track { height: 8px; background: #eef2f6; border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; border-radius: 999px; background: #111827; }
+    .timeline { padding: 12px 14px; }
+    .time-row { display: grid; grid-template-columns: 58px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid #edf1f5; }
+    .time-row:last-child { border-bottom: 0; }
+    .time { font-size: 12px; color: var(--muted); }
+    .time-text { font-size: 13px; line-height: 1.45; }
+    .empty { border: 1px dashed var(--line); border-radius: 8px; padding: 22px; text-align: center; color: var(--muted); background: white; }
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 320px 1fr; }
+      .side { display: none; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .chain-flow { grid-template-columns: 1fr 1fr; }
+      .search { width: 180px; }
+    }
+    @media (max-width: 760px) {
+      .app { display: block; }
+      .layout { display: block; }
+      .rail { max-height: 45vh; }
+      .topbar { align-items: flex-start; height: auto; padding: 12px; gap: 12px; flex-direction: column; }
+      .toolbar { justify-content: flex-start; }
+      .search { width: 100%; }
+      main { padding: 12px; }
+      .chain-flow { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">XR</div>
+        <div>
+          <h1>X-Ray</h1>
+          <p>X 重要信息还原器</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input id="search" class="search" placeholder="搜索主题、账号、关键词" />
+        <select id="board" class="select"><option value="">全部板块</option></select>
+        <select id="status" class="select">
+          <option value="">全部状态</option>
+          <option value="confirmed">已确认</option>
+          <option value="developing">发酵中</option>
+          <option value="unverified">未验证</option>
+          <option value="high_risk">高风险</option>
+        </select>
+        <button class="btn primary" onclick="refresh()">Mock Run</button>
+      </div>
+    </header>
+    <div class="layout">
+      <aside class="rail">
+        <div class="rail-head"><strong>今日热点</strong><span id="count" class="subtle"></span></div>
+        <div id="topicList" class="topic-list"></div>
+      </aside>
+      <main id="detail"></main>
+      <aside class="side">
+        <div class="side-head"><strong>传播与角色</strong><span class="subtle">证据链</span></div>
+        <div id="sidePanel"></div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const roles = ["source", "evidence", "amplifier", "opinion", "counter", "duplicate", "spam"];
+    const roleLabels = { source: "源头", evidence: "证据", amplifier: "放大", opinion: "观点", counter: "反对", duplicate: "搬运", spam: "垃圾" };
+    const statusLabels = { confirmed: "已确认", developing: "发酵中", unverified: "未验证", high_risk: "高风险" };
+    const boardLabels = { AI: "AI", Crypto: "Crypto", Stock: "美股科技", Macro: "宏观", Startup: "创业产品", Risk: "风险" };
+    const boards = ["AI", "Crypto", "Stock", "Macro", "Startup", "Risk"];
+    let topics = [];
+    let selected = 0;
+
+    document.getElementById("board").innerHTML += boards.map(board => `<option value="${board}">${boardLabels[board]}</option>`).join("");
+    document.getElementById("search").addEventListener("input", render);
+    document.getElementById("board").addEventListener("change", render);
+    document.getElementById("status").addEventListener("change", render);
+    refresh();
+
+    async function refresh() {
+      const response = await fetch("/api/topics", { cache: "no-store" });
+      topics = await response.json();
+      selected = Math.min(selected, Math.max(0, topics.length - 1));
+      render();
+    }
+
+    function filtered() {
+      const query = document.getElementById("search").value.trim().toLowerCase();
+      const board = document.getElementById("board").value;
+      const status = document.getElementById("status").value;
+      return topics.filter(topic => {
+        const haystack = [topic.title, topic.board, topic.status, ...topic.posts.map(post => post.author_username + " " + post.text)].join(" ").toLowerCase();
+        return (!query || haystack.includes(query)) && (!board || topic.board === board) && (!status || topic.status === status);
+      });
+    }
+
+    function render() {
+      const list = filtered();
+      if (selected >= list.length) selected = 0;
+      document.getElementById("count").textContent = `${list.length} topics`;
+      document.getElementById("topicList").innerHTML = list.map((topic, index) => topicButton(topic, index)).join("") || "<div class='empty'>暂无匹配 Topic</div>";
+      renderDetail(list[selected]);
+      renderSide(list[selected]);
+    }
+
+    function topicButton(topic, index) {
+      return `<button class="topic ${index === selected ? "active" : ""}" onclick="selected=${index};render()">
+        <span class="pill">${boardLabels[topic.board] || topic.board}</span><span class="pill ${topic.status}">${statusLabels[topic.status] || topic.status}</span>
+        <div class="topic-title">${esc(topic.title)}</div>
+        <div class="topic-foot">
+          <div class="mini"><span>热度</span><b>${topic.hot}</b></div>
+          <div class="mini"><span>可信</span><b>${topic.confidence}</b></div>
+          <div class="mini"><span>原帖</span><b>${topic.posts.length}</b></div>
+        </div>
+      </button>`;
+    }
+
+    function renderDetail(topic) {
+      if (!topic) {
+        document.getElementById("detail").innerHTML = "<div class='empty'>选择或运行一个 Topic</div>";
+        return;
+      }
+      document.getElementById("detail").innerHTML = `<section class="hero">
+        <div class="hero-top">
+          <div><span class="pill">${boardLabels[topic.board] || topic.board}</span><span class="pill ${topic.status}">${statusLabels[topic.status] || topic.status}</span></div>
+          <span class="subtle">首次发现 ${fmt(topic.firstSeen)} / 最近出现 ${fmt(topic.lastSeen)}</span>
+        </div>
+        <h2>${esc(topic.title)}</h2>
+        <div class="subtle">原帖是主角，系统只做过滤、排序、证据链和风险标注。</div>
+        <div class="metrics">
+          <div class="metric"><span>热度</span><b>${topic.hot}</b></div>
+          <div class="metric"><span>可信度</span><b>${topic.confidence}</b></div>
+          <div class="metric"><span>证据帖</span><b>${countRole(topic, "evidence")}</b></div>
+          <div class="metric"><span>噪声帖</span><b>${countRole(topic, "spam") + countRole(topic, "duplicate")}</b></div>
+        </div>
+      </section>
+      <section class="chain">
+        <h3>热点证据链</h3>
+        <div class="chain-flow">
+          ${chainStep("源头帖", "source", topic)}
+          ${chainStep("证据帖", "evidence", topic)}
+          ${chainStep("放大帖", "amplifier", topic)}
+          ${chainStep("观点帖", "opinion", topic)}
+          ${chainStep("反对帖", "counter", topic)}
+        </div>
+      </section>
+      ${["source", "evidence", "amplifier", "opinion", "counter", "duplicate", "spam"].map(role => renderSection(topic, role)).join("")}`;
+    }
+
+    function chainStep(title, role, topic) {
+      const post = topic.posts.find(item => item.role === role);
+      return `<div class="chain-step"><span class="pill role-${role}">${title}</span><p>${post ? "@" + esc(post.author_username) + ": " + esc(short(post.text, 82)) : "暂无，继续跟踪"}</p></div>`;
+    }
+
+    function renderSection(topic, role) {
+      const items = topic.posts.filter(post => post.role === role);
+      return `<section class="section"><h3><span class="pill role-${role}">${roleLabels[role]}</span></h3>${items.length ? items.map(postCard).join("") : "<div class='subtle'>暂无</div>"}</section>`;
+    }
+
+    function postCard(post) {
+      return `<article class="post">
+        <div class="post-head">
+          <div>
+            <div class="author">${esc(post.author_display_name || post.author_username)} <span class="meta">@${esc(post.author_username)}</span></div>
+            <div class="meta">${fmt(post.posted_at)} · ${num(post.author_followers_count)} 关注者 · 评分 ${post.score}</div>
+          </div>
+          <span class="pill role-${post.role}">${roleLabels[post.role]}</span>
+        </div>
+        <p class="post-text">${esc(post.text)}</p>
+        <div class="post-actions">
+          <a href="${post.url}" target="_blank">原帖链接</a>
+          ${(post.external_links || []).map(link => `<a target="_blank" href="${esc(link)}">证据链接</a>`).join("")}
+        </div>
+      </article>`;
+    }
+
+    function renderSide(topic) {
+      if (!topic) {
+        document.getElementById("sidePanel").innerHTML = "";
+        return;
+      }
+      const max = Math.max(1, ...roles.map(role => countRole(topic, role)));
+      document.getElementById("sidePanel").innerHTML = `<div class="role-bars">
+        ${roles.map(role => `<div class="bar"><span>${roleLabels[role]}</span><div class="track"><div class="fill" style="width:${countRole(topic, role) / max * 100}%"></div></div><b>${countRole(topic, role)}</b></div>`).join("")}
+      </div>
+      <div class="timeline">
+        <div class="subtle" style="margin-bottom:6px">传播时间线</div>
+        ${topic.posts.slice().sort((a, b) => new Date(a.posted_at) - new Date(b.posted_at)).map(post => `<div class="time-row"><div class="time">${timeOnly(post.posted_at)}</div><div class="time-text"><b>@${esc(post.author_username)}</b><br>${esc(short(post.text, 88))}</div></div>`).join("")}
+      </div>`;
+    }
+
+    function countRole(topic, role) { return topic.posts.filter(post => post.role === role).length; }
+    function short(text, len) { return String(text || "").length > len ? String(text).slice(0, len - 3) + "..." : String(text || ""); }
+    function fmt(value) { return new Date(value).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
+    function timeOnly(value) { return new Date(value).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }); }
+    function num(value) { return Intl.NumberFormat("en", { notation: "compact" }).format(value || 0); }
+    function esc(value) { return String(value || "").replace(/[&<>"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[char])); }
+  </script>
+</body>
+</html>
